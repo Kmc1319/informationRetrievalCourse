@@ -24,23 +24,29 @@ class MySearcher:
         else:
             # Apply the probabilistic BM25F model, the default model in searcher method
             self.searcher = ix.searcher()
-        self.parser = QueryParser("content", ix.schema, group = OrGroup)
+        self.parser = QueryParser("title", ix.schema, group = OrGroup)
 
-    def search(self, query_text):
+    def search(self, query_text, info):
         query = self.parser.parse(query_text)
-        results = self.searcher.search(query)
+        results = self.searcher.search(query, limit=None)
         print('Returned documents:')
         i = 1
         for result in results:
             print(f'{i} - File path: {result.get("path")}, Similarity score: {result.score}')
+            if info:
+                print(f'    Modified: {result.get("modified")}')
             i += 1
 
 if __name__ == '__main__':
     index_folder = '../whooshindex'
     i = 1
+    info = False
     while (i < len(sys.argv)):
         if sys.argv[i] == '-index':
             index_folder = sys.argv[i+1]
+            i = i + 1
+        elif sys.argv[i] == '-info':
+            info = True
             i = i + 1
         i = i + 1
 
@@ -49,5 +55,5 @@ if __name__ == '__main__':
     #query = 'System engineering'
     query = input('Introduce a query: ')
     while query != 'q':
-        searcher.search(query)
+        searcher.search(query, info)
         query = input('Introduce a query (\'q\' for exit): ')

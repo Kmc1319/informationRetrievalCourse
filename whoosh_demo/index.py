@@ -10,10 +10,11 @@ Usage: python index.py -index <index folder> -docs <docs folder>
 
 from whoosh.index import create_in
 from whoosh.fields import *
-
+from whoosh.analysis import LanguageAnalyzer
 import os
-
+import sys
 import xml.etree.ElementTree as ET
+from datetime import datetime
 
 def create_folder(folder_name):
     if (not os.path.exists(folder_name)):
@@ -21,7 +22,9 @@ def create_folder(folder_name):
 
 class MyIndex:
     def __init__(self,index_folder):
-        schema = Schema(path=ID(stored=True), content=TEXT)
+        language_analyzer = LanguageAnalyzer(lang="es", expression=r"\w+")
+        schema = Schema(path=ID(stored=True), content=TEXT(analyzer=language_analyzer), modified=STORED,
+                        title=TEXT(analyzer=language_analyzer))
         create_folder(index_folder)
         index = create_in(index_folder, schema)
         self.writer = index.writer()
@@ -29,7 +32,6 @@ class MyIndex:
     def index_docs(self,docs_folder):
         if (os.path.exists(docs_folder)):
             for file in sorted(os.listdir(docs_folder)):
-                # print(file)
                 if file.endswith('.xml'):
                     self.index_xml_doc(docs_folder, file)
                 elif file.endswith('.txt'):
@@ -38,22 +40,28 @@ class MyIndex:
 
     def index_txt_doc(self, foldername,filename):
         file_path = os.path.join(foldername, filename)
-        # print(file_path)
-        with open(file_path) as fp:
+        with open(file_path, encoding="utf-8") as fp:
             text = ' '.join(line for line in fp if line)
-        # print(text)
-        self.writer.add_document(path=filename, content=text)
+        mod_time = os.path.getmtime(file_path)
+        mod_date = datetime.fromtimestamp(mod_time).isoformat()
+        self.writer.add_document(path=filename, content=text, modified=mod_date)
+
+    def texto_title(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        title_nodes = root.findall('dc:title', ns)
+        title_text = ' '.join(node.text.strip() for node in title_nodes if node.text)
+        return title_text
 
     def index_xml_doc(self, foldername, filename):
         file_path = os.path.join(foldername, filename)
-        # print(file_path)
         tree = ET.parse(file_path)
         root = tree.getroot()
         raw_text = "".join(root.itertext())
-        # break into lines and remove leading and trailing space on each
         text = ' '.join(line.strip() for line in raw_text.splitlines() if line)
-        # print(text)
-        self.writer.add_document(path=filename,content=text)
+        title_text = self.texto_title(root)
+        mod_time = os.path.getmtime(file_path)
+        mod_date = datetime.fromtimestamp(mod_time).isoformat()
+        self.writer.add_document(path=filename, content=text, modified=mod_date, title=title_text)
 
 if __name__ == '__main__':
 
@@ -71,5 +79,3 @@ if __name__ == '__main__':
 
     my_index = MyIndex(index_folder)
     my_index.index_docs(docs_folder)
-
-
