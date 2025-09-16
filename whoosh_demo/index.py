@@ -24,7 +24,8 @@ class MyIndex:
     def __init__(self,index_folder):
         language_analyzer = LanguageAnalyzer(lang="es", expression=r"\w+")
         schema = Schema(path=ID(stored=True), content=TEXT(analyzer=language_analyzer), modified=STORED,
-                        title=TEXT(analyzer=language_analyzer))
+                        title=TEXT(analyzer=language_analyzer), subject=TEXT(analyzer=language_analyzer),
+                        description=TEXT(analyzer=language_analyzer))
         create_folder(index_folder)
         index = create_in(index_folder, schema)
         self.writer = index.writer()
@@ -51,7 +52,19 @@ class MyIndex:
         title_nodes = root.findall('dc:title', ns)
         title_text = ' '.join(node.text.strip() for node in title_nodes if node.text)
         return title_text
+    
+    def texto_subject(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        subject_nodes = root.findall('dc:subject', ns)
+        subject_text = ' '.join(node.text.strip() for node in subject_nodes if node.text)
+        return subject_text
 
+    def texto_description(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        description_nodes = root.findall('dc:description', ns)
+        description_text = ' '.join(node.text.strip() for node in description_nodes if node.text)
+        return description_text
+    
     def index_xml_doc(self, foldername, filename):
         file_path = os.path.join(foldername, filename)
         tree = ET.parse(file_path)
@@ -59,9 +72,11 @@ class MyIndex:
         raw_text = "".join(root.itertext())
         text = ' '.join(line.strip() for line in raw_text.splitlines() if line)
         title_text = self.texto_title(root)
+        subject_text = self.texto_subject(root)
+        description_text = self.texto_description(root)
         mod_time = os.path.getmtime(file_path)
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
-        self.writer.add_document(path=filename, content=text, modified=mod_date, title=title_text)
+        self.writer.add_document(path=filename, content=text, modified=mod_date, title=title_text, subject=subject_text, description=description_text)
 
 if __name__ == '__main__':
 
