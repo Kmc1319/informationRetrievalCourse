@@ -14,6 +14,7 @@ from whoosh.qparser import QueryParser
 from whoosh.qparser import OrGroup
 from whoosh import scoring
 import whoosh.index as index
+from index import SnowballStemFilter
 
 class MySearcher:
     def __init__(self, index_folder, model_type = 'tfidf'):

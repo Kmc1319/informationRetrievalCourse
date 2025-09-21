@@ -10,22 +10,33 @@ Usage: python index.py -index <index folder> -docs <docs folder>
 
 from whoosh.index import create_in
 from whoosh.fields import *
-from whoosh.analysis import LanguageAnalyzer
+from whoosh.analysis import *
 import os
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from nltk.stem.snowball import SpanishStemmer
+
 
 def create_folder(folder_name):
     if (not os.path.exists(folder_name)):
         os.mkdir(folder_name)
 
+class SnowballStemFilter(Filter):
+    def __init__(self):
+        self.stemmer = SpanishStemmer()
+
+    def __call__(self, tokens):
+        for token in tokens:
+            token.text = self.stemmer.stem(token.text)
+            yield token
+
 class MyIndex:
     def __init__(self,index_folder):
-        language_analyzer = LanguageAnalyzer(lang="es", expression=r"\w+")
-        schema = Schema(path=ID(stored=True), modified=STORED, autor=TEXT(analyzer=language_analyzer),
-                        title=TEXT(analyzer=language_analyzer), subject=TEXT(analyzer=language_analyzer),
-                        description=TEXT(analyzer=language_analyzer))
+        analizador = RegexTokenizer() | LowercaseFilter() | StopFilter() | SnowballStemFilter()
+        schema = Schema(path=ID(stored=True), modified=STORED, autor=TEXT(analyzer=analizador), director=TEXT(analyzer=analizador),
+                        departamento=TEXT(analyzer=analizador), title=TEXT(analyzer=analizador), subject=TEXT(analyzer=analizador),
+                        description=TEXT(analyzer=analizador), agno=TEXT(analyzer=analizador))
         create_folder(index_folder)
         index = create_in(index_folder, schema)
         self.writer = index.writer()
@@ -47,6 +58,24 @@ class MyIndex:
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
         self.writer.add_document(path=filename, content=text, modified=mod_date)
 
+    def texto_autor(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        autor_nodes = root.findall('dc:creator', ns)
+        autor_text = ' '.join(node.text.strip() for node in autor_nodes if node.text)
+        return autor_text
+    
+    def texto_director(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        director_nodes = root.findall('dc:contributor', ns)
+        director_text = ' '.join(node.text.strip() for node in director_nodes if node.text)
+        return director_text
+    
+    def texto_departamento(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        departamento_nodes = root.findall('dc:publisher', ns)
+        departamento_text = ' '.join(node.text.strip() for node in departamento_nodes if node.text)
+        return departamento_text
+
     def texto_title(self, root):
         ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
         title_nodes = root.findall('dc:title', ns)
@@ -65,16 +94,27 @@ class MyIndex:
         description_text = ' '.join(node.text.strip() for node in description_nodes if node.text)
         return description_text
     
+    def texto_agno(self, root):
+        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
+        agno_nodes = root.findall('dc:date', ns)
+        agno_text = ' '.join(node.text.strip() for node in agno_nodes if node.text)
+        return agno_text
+    
     def index_xml_doc(self, foldername, filename):
         file_path = os.path.join(foldername, filename)
         tree = ET.parse(file_path)
         root = tree.getroot()
+        autor_text = self.texto_autor(root)
+        director_text = self.texto_director(root)
+        departamento_text = self.texto_departamento(root)
         title_text = self.texto_title(root)
         subject_text = self.texto_subject(root)
         description_text = self.texto_description(root)
+        agno_text = self.texto_agno(root)
         mod_time = os.path.getmtime(file_path)
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
-        self.writer.add_document(path=filename, modified=mod_date, title=title_text, subject=subject_text, description=description_text)
+        self.writer.add_document(path=filename, modified=mod_date, autor=autor_text, director=director_text, departamento=departamento_text,
+                                title=title_text, subject=subject_text, description=description_text, agno=agno_text)
 
 if __name__ == '__main__':
 
