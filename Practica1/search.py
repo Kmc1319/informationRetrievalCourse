@@ -49,6 +49,12 @@ if __name__ == '__main__':
         elif sys.argv[i] == '-info':
             info = True
             i = i + 1
+        elif sys.argv[i] == '-infoNeeds':
+            infoNeeds = True
+            i = i + 1
+        elif sys.argv[i] == '-output':
+            output = True
+            i = i + 1
         i = i + 1
 
     searcher = MySearcher(index_folder)

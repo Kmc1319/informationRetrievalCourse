@@ -15,20 +15,19 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from nltk.stem.snowball import SpanishStemmer
+from nltk.stem.snowball import SnowballStemmer
 
+ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
 
 def create_folder(folder_name):
     if (not os.path.exists(folder_name)):
         os.mkdir(folder_name)
 
 class SnowballStemFilter(Filter):
-    def __init__(self):
-        self.stemmer = SpanishStemmer()
-
     def __call__(self, tokens):
+        stemmer = SnowballStemmer(language="spanish")
         for token in tokens:
-            token.text = self.stemmer.stem(token.text)
+            token.text = stemmer.stem(token.text)
             yield token
 
 class MyIndex:
@@ -58,61 +57,25 @@ class MyIndex:
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
         self.writer.add_document(path=filename, content=text, modified=mod_date)
 
-    def texto_autor(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        autor_nodes = root.findall('dc:creator', ns)
-        autor_text = ' '.join(node.text.strip() for node in autor_nodes if node.text)
-        return autor_text
-    
-    def texto_director(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        director_nodes = root.findall('dc:contributor', ns)
-        director_text = ' '.join(node.text.strip() for node in director_nodes if node.text)
-        return director_text
-    
-    def texto_departamento(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        departamento_nodes = root.findall('dc:publisher', ns)
-        departamento_text = ' '.join(node.text.strip() for node in departamento_nodes if node.text)
-        return departamento_text
-
-    def texto_title(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        title_nodes = root.findall('dc:title', ns)
-        title_text = ' '.join(node.text.strip() for node in title_nodes if node.text)
-        return title_text
-    
-    def texto_subject(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        subject_nodes = root.findall('dc:subject', ns)
-        subject_text = ' '.join(node.text.strip() for node in subject_nodes if node.text)
-        return subject_text
-
-    def texto_description(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        description_nodes = root.findall('dc:description', ns)
-        description_text = ' '.join(node.text.strip() for node in description_nodes if node.text)
-        return description_text
-    
-    def texto_agno(self, root):
-        ns = {'dc': 'http://purl.org/dc/elements/1.1/'}
-        agno_nodes = root.findall('dc:date', ns)
-        agno_text = ' '.join(node.text.strip() for node in agno_nodes if node.text)
-        return agno_text
+    def extraer_texto(self, root, etiqueta):
+        nodos = root.findall(etiqueta, ns)
+        return ' '.join(nodo.text.strip() for nodo in nodos if nodo.text)
     
     def index_xml_doc(self, foldername, filename):
         file_path = os.path.join(foldername, filename)
         tree = ET.parse(file_path)
         root = tree.getroot()
-        autor_text = self.texto_autor(root)
-        director_text = self.texto_director(root)
-        departamento_text = self.texto_departamento(root)
-        title_text = self.texto_title(root)
-        subject_text = self.texto_subject(root)
-        description_text = self.texto_description(root)
-        agno_text = self.texto_agno(root)
+
+        autor_text = self.extraer_texto(root, 'dc:creator')
+        director_text = self.extraer_texto(root, 'dc:contributor')
+        departamento_text = self.extraer_texto(root, 'dc:publisher')
+        title_text = self.extraer_texto(root, 'dc:title')
+        subject_text = self.extraer_texto(root, 'dc:subject')
+        description_text = self.extraer_texto(root, 'dc:description')
+        agno_text = self.extraer_texto(root, 'dc:date')
         mod_time = os.path.getmtime(file_path)
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
+        
         self.writer.add_document(path=filename, modified=mod_date, autor=autor_text, director=director_text, departamento=departamento_text,
                                 title=title_text, subject=subject_text, description=description_text, agno=agno_text)
 
