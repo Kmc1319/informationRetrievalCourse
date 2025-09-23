@@ -1,7 +1,7 @@
 """
 index.py
 Author: Enrique Martínez Casanova
-Last update: 2024-09-07
+Last update: 23/09/2025
 
 Simple program to create an inverted index with the contents of text/xml files contained in a docs folder
 This program is based on the whoosh library. See https://pypi.org/project/Whoosh/ .
@@ -32,10 +32,12 @@ class SnowballStemFilter(Filter):
 
 class MyIndex:
     def __init__(self,index_folder):
+        # Se define un analizador personalizado que incluye el filtro de stemming Snowball en español 
         analizador = RegexTokenizer() | LowercaseFilter() | StopFilter() | SnowballStemFilter()
+        # Definición del esquema del índice con los campos a indexar
         schema = Schema(path=ID(stored=True), modified=STORED, autor=TEXT(analyzer=analizador), director=TEXT(analyzer=analizador),
-                        departamento=TEXT(analyzer=analizador), title=TEXT(analyzer=analizador), subject=TEXT(analyzer=analizador),
-                        description=TEXT(analyzer=analizador), agno=TEXT(analyzer=analizador), identificador=ID(stored=True))
+                        departamento=TEXT(analyzer=analizador), titulo=TEXT(analyzer=analizador), materia=TEXT(analyzer=analizador),
+                        descripcion=TEXT(analyzer=analizador), agno=TEXT(analyzer=analizador), identificador=ID(stored=True))
         create_folder(index_folder)
         index = create_in(index_folder, schema)
         self.writer = index.writer()
@@ -58,27 +60,36 @@ class MyIndex:
         self.writer.add_document(path=filename, content=text, modified=mod_date)
 
     def extraer_texto(self, root, etiqueta):
+        """
+        Extrae y concatena el texto de todos los nodos que coinciden con la etiqueta dada
+        en el árbol XML representado por root.
+
+        """
         nodos = root.findall(etiqueta, ns)
         return ' '.join(nodo.text.strip() for nodo in nodos if nodo.text)
     
     def index_xml_doc(self, foldername, filename):
+        """
+        Indexa un documento XML extrayendo campos específicos y añadiéndolos al índice.
+
+        """
         file_path = os.path.join(foldername, filename)
         tree = ET.parse(file_path)
         root = tree.getroot()
 
-        autor_text = self.extraer_texto(root, 'dc:creator')
-        director_text = self.extraer_texto(root, 'dc:contributor')
-        departamento_text = self.extraer_texto(root, 'dc:publisher')
-        title_text = self.extraer_texto(root, 'dc:title')
-        subject_text = self.extraer_texto(root, 'dc:subject')
-        description_text = self.extraer_texto(root, 'dc:description')
-        agno_text = self.extraer_texto(root, 'dc:date')
-        identifier_text = self.extraer_texto(root, 'dc:identifier')
+        texto_autor = self.extraer_texto(root, 'dc:creator')
+        texto_director = self.extraer_texto(root, 'dc:contributor')
+        texto_departamento = self.extraer_texto(root, 'dc:publisher')
+        texto_titulo = self.extraer_texto(root, 'dc:title')
+        texto_subject = self.extraer_texto(root, 'dc:subject')
+        texto_descripcion = self.extraer_texto(root, 'dc:description')
+        texto_agno = self.extraer_texto(root, 'dc:date')
+        texto_identificador = self.extraer_texto(root, 'dc:identifier')
         mod_time = os.path.getmtime(file_path)
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
-        
-        self.writer.add_document(path=filename, modified=mod_date, autor=autor_text, director=director_text, departamento=departamento_text,
-                                title=title_text, subject=subject_text, description=description_text, agno=agno_text, identificador=identifier_text)
+        # Añadir el documento al índice con los campos extraídos
+        self.writer.add_document(path=filename, modified=mod_date, autor=texto_autor, director=texto_director, departamento=texto_departamento,
+                                titulo=texto_titulo, materia=texto_subject, descripcion=texto_descripcion, agno=texto_agno, identificador=texto_identificador)
 
 if __name__ == '__main__':
 

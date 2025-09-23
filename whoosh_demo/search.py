@@ -29,6 +29,7 @@ class MySearcher:
     def search(self, query_text, info):
         query = self.parser.parse(query_text)
         results = self.searcher.search(query, limit=None)
+        print(results)
         print('Returned documents:')
         i = 1
         for result in results:

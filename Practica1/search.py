@@ -1,9 +1,10 @@
 """
 search.py
-Author: Javier Nogueras Iso
-Last update: 2024-09-07
+Author: Enrique Martínez Casanova
+Last update: 23/09/2025
 
 Extended with -infoNeeds and -output functionality
+Usage: python search.py -index <index folder> [-info] [-infoNeeds <query file> -output <results file>]
 """
 
 import sys
@@ -19,11 +20,12 @@ class MySearcher:
             self.searcher = ix.searcher(weighting=scoring.TF_IDF())
         else:
             self.searcher = ix.searcher()
-        self.parser = QueryParser("title", ix.schema, group=OrGroup)
+        self.parser = QueryParser("titulo", ix.schema, group=OrGroup)
 
     def search(self, query_text, info, max_results=100):
         query = self.parser.parse(query_text)
         results = self.searcher.search(query, limit=max_results)
+        print(results)
         return results
 
 
@@ -51,6 +53,7 @@ if __name__ == '__main__':
 
     searcher = MySearcher(index_folder)
 
+    # Se procesan las consultas desde un fichero si se ha indicado y se guarda la salida en otro fichero
     if infoNeeds and output:
         with open(infoNeeds, "r", encoding="utf-8") as qf, open(output, "w", encoding="utf-8") as rf:
             queries = [line.strip() for line in qf if line.strip()]
@@ -61,6 +64,7 @@ if __name__ == '__main__':
                     if doc_id:
                         rf.write(f"{qnum}\t{doc_id}\n")
 
+    # Se procesan las consultas desde la entrada estándar
     else:
         query = input("Introduce una consulta: ")
         while query != 'q':

@@ -1,3 +1,1 @@
-creator:Enrique
-publisher:Derecho
-subject:recursos AND date:2016
+autor:Hernandez AND agno:2009 AND departamento:Informática
