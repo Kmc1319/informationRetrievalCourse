@@ -35,7 +35,7 @@ class MyIndex:
         analizador = RegexTokenizer() | LowercaseFilter() | StopFilter() | SnowballStemFilter()
         schema = Schema(path=ID(stored=True), modified=STORED, autor=TEXT(analyzer=analizador), director=TEXT(analyzer=analizador),
                         departamento=TEXT(analyzer=analizador), title=TEXT(analyzer=analizador), subject=TEXT(analyzer=analizador),
-                        description=TEXT(analyzer=analizador), agno=TEXT(analyzer=analizador))
+                        description=TEXT(analyzer=analizador), agno=TEXT(analyzer=analizador), identificador=ID(stored=True))
         create_folder(index_folder)
         index = create_in(index_folder, schema)
         self.writer = index.writer()
@@ -73,11 +73,12 @@ class MyIndex:
         subject_text = self.extraer_texto(root, 'dc:subject')
         description_text = self.extraer_texto(root, 'dc:description')
         agno_text = self.extraer_texto(root, 'dc:date')
+        identifier_text = self.extraer_texto(root, 'dc:identifier')
         mod_time = os.path.getmtime(file_path)
         mod_date = datetime.fromtimestamp(mod_time).isoformat()
         
         self.writer.add_document(path=filename, modified=mod_date, autor=autor_text, director=director_text, departamento=departamento_text,
-                                title=title_text, subject=subject_text, description=description_text, agno=agno_text)
+                                title=title_text, subject=subject_text, description=description_text, agno=agno_text, identificador=identifier_text)
 
 if __name__ == '__main__':
 

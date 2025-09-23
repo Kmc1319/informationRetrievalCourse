@@ -3,64 +3,71 @@ search.py
 Author: Javier Nogueras Iso
 Last update: 2024-09-07
 
-Program to search a free text query on a previously created inverted index.
-This program is based on the whoosh library. See https://pypi.org/project/Whoosh/ .
-Usage: python search.py -index <index folder>
+Extended with -infoNeeds and -output functionality
 """
 
 import sys
-
-from whoosh.qparser import QueryParser
-from whoosh.qparser import OrGroup
+from whoosh.qparser import QueryParser, OrGroup
 from whoosh import scoring
 import whoosh.index as index
 from index import SnowballStemFilter
 
 class MySearcher:
-    def __init__(self, index_folder, model_type = 'tfidf'):
+    def __init__(self, index_folder, model_type='tfidf'):
         ix = index.open_dir(index_folder)
         if model_type == 'tfidf':
-            # Apply a vector retrieval model as default
             self.searcher = ix.searcher(weighting=scoring.TF_IDF())
         else:
-            # Apply the probabilistic BM25F model, the default model in searcher method
             self.searcher = ix.searcher()
-        self.parser = QueryParser("title", ix.schema, group = OrGroup)
+        self.parser = QueryParser("title", ix.schema, group=OrGroup)
 
-    def search(self, query_text, info):
+    def search(self, query_text, info, max_results=100):
         query = self.parser.parse(query_text)
-        results = self.searcher.search(query, limit=None)
-        print('Returned documents:')
-        i = 1
-        for result in results:
-            print(f'{i} - File path: {result.get("path")}, Similarity score: {result.score}')
-            if info:
-                print(f'    Modified: {result.get("modified")}')
-            i += 1
+        results = self.searcher.search(query, limit=max_results)
+        return results
+
 
 if __name__ == '__main__':
     index_folder = '../whooshindex'
-    i = 1
     info = False
-    while (i < len(sys.argv)):
+    infoNeeds = None
+    output = None
+
+    # Parse arguments
+    i = 1
+    while i < len(sys.argv):
         if sys.argv[i] == '-index':
-            index_folder = sys.argv[i+1]
-            i = i + 1
+            index_folder = sys.argv[i + 1]
+            i += 1
         elif sys.argv[i] == '-info':
             info = True
-            i = i + 1
         elif sys.argv[i] == '-infoNeeds':
-            infoNeeds = True
-            i = i + 1
+            infoNeeds = sys.argv[i + 1]
+            i += 1
         elif sys.argv[i] == '-output':
-            output = True
-            i = i + 1
-        i = i + 1
+            output = sys.argv[i + 1]
+            i += 1
+        i += 1
 
     searcher = MySearcher(index_folder)
 
-    #query = 'System engineering'
-    query = input('Introduce a query: ')
-    while query != 'q':
-        searcher.search(query, info)
-        query = input('Introduce a query (\'q\' for exit): ')
+    if infoNeeds and output:
+        with open(infoNeeds, "r", encoding="utf-8") as qf, open(output, "w", encoding="utf-8") as rf:
+            queries = [line.strip() for line in qf if line.strip()]
+            for qnum, query in enumerate(queries, start=1):
+                results = searcher.search(query, info, max_results=100)
+                for result in results:
+                    doc_id = result.get("identificador")
+                    if doc_id:
+                        rf.write(f"{qnum}\t{doc_id}\n")
+
+    else:
+        query = input("Introduce una consulta: ")
+        while query != 'q':
+            results = searcher.search(query, info)
+            print("Returned documents:")
+            for i, result in enumerate(results, start=1):
+                print(f"{i} - File path: {result.get('path')}, Similarity score: {result.score}")
+                if info:
+                    print(f"    Modified: {result.get('modified')}")
+            query = input("Introduce una consulta ('q' para salir): ")
