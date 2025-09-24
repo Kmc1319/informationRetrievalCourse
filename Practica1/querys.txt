@@ -1,1 +1,4 @@
-autor:Hernandez AND agno:2009 AND departamento:Informática
+autor:Martínez
+autor:Martínez AND agno:2009
+(autor:Martínez AND agno:2009) OR departamento:Artes
+((autor:Martínez AND agno:2009) OR (departamento:Artes AND director:Hernández)) AND descripcion:revolución
