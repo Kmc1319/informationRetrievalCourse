@@ -1,0 +1,8 @@
+Consulta: spatial:-180.0,180.0,-90.0,90.0 titulo:natura
+Num. Resultados: 18
+Resultados: 17 12 13 14 15 16 18 19 20 21 23 24 25 26 27 28 29 30 
+
+Consulta: spatial:-180.0,180.0,-90.0,90.0 titulo:nacional
+Num. Resultados: 20
+Resultados: 17 12 13 14 15 16 18 19 20 21 23 24 25 26 27 28 29 30 01 05 
+

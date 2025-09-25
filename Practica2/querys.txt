@@ -1,0 +1,2 @@
+spatial:-180.0,180.0,-90.0,90.0 titulo:natura
+spatial:-180.0,180.0,-90.0,90.0 titulo:nacional
